@@ -7,6 +7,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import Subset
 from torchvision import datasets, transforms
 from torchvision.models import resnet18, ResNet18_Weights
 from torch.utils.data import DataLoader
@@ -65,7 +66,7 @@ def train(num_epochs, batch_size, train_dataset, val_dataset, model, model_dir):
 
     # Training loop
     print("Start training...")
-    best_val_accuracy = 0.0
+    best_val_accuracy = -1.0
     
     session = Session(boto3.session.Session(region_name="us-east-1"))
     with load_run(experiment_name="DogBreedsClassification", run_name=f"run-{int(time.time())}", sagemaker_session=session) as run:
@@ -116,11 +117,27 @@ def train(num_epochs, batch_size, train_dataset, val_dataset, model, model_dir):
 
     print('Training complete')
     
-def main(data_dir, model_dir, num_epochs, batch_size):
+def main(data_dir, model_dir, output_dir, num_epochs, batch_size, debug=False):
     
     dataset, train_dataset, val_dataset = get_dataset(data_dir)
+    # write to data_classes.txt
+    data_file_path = os.path.join(model_dir, "data_classes.txt")
+    with open(data_file_path, "w") as f:
+        for cls in dataset.classes:
+            f.write(f"{cls}\n")
+    print(f"Classes written to {data_file_path}")
+    
     num_classes = len(dataset.classes)
     model = get_model(num_classes)
+    
+    if debug: 
+        # Define the size of the subset
+        subset_size = batch_size
+
+        # Generate random indices
+        indices = list(range(subset_size))
+        train_dataset = Subset(train_dataset, indices)
+        val_dataset = Subset(val_dataset, indices)
     
     train(num_epochs, batch_size, train_dataset, val_dataset, model, model_dir)
     
@@ -129,8 +146,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAIN"])
     parser.add_argument("--model_dir", type=str, default=os.environ["SM_MODEL_DIR"])
+    parser.add_argument("--output_dir", type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
+    parser.add_argument("--debug", type=bool, default=False)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch_size", type=int, default=32)
     args, _ = parser.parse_known_args()
     
-    main(args.data_dir, args.model_dir, args.epochs, args.batch_size)
+    main(args.data_dir, args.model_dir, args.output_dir, args.epochs, args.batch_size, args.debug)
