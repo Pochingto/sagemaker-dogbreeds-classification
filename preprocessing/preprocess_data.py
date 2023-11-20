@@ -110,7 +110,7 @@ def extract_image_feature(train_data_dir, output_dir):
                     
 def preprocess_data(data_dir, output_dir, train_ratio):
     split_data(data_dir, output_dir, train_ratio)
-    extract_image_feature(os.path.join(output_dir, "train"), os.path.join(output_dir, "train-baseline"))
+    extract_image_feature(os.path.join(output_dir, "train"), os.path.join(output_dir, "data-baseline"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

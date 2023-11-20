@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from torchvision import models, transforms
 from PIL import Image
 import io
@@ -6,7 +7,7 @@ import json
 import os
 
 print("Using inference.py ....")
-with open(s.path.join(model_dir, 'data_classes.txt'), 'rb') as f:
+with open(os.path.join(model_dir, 'data_classes.txt'), 'rb') as f:
     CLASSES = [cls.strip() for cls in f.readlines()]
 
 # Define the model_fn which loads the model
@@ -76,10 +77,15 @@ def output_fn(prediction_output, accept):
     
     if "application/json" in accept:
         # Convert the prediction output to JSON
-        prediction = prediction_output.argmax(1).tolist()
-        print(prediction)
+        conf, pred = torch.max(prediction_output, 1)
+        conf = conf.tolist()[0]
+        pred = pred.tolist()[0]
         try: 
-            response = json.dumps(CLASSES[prediction[0]])
+            response = json.dumps({
+                "prediction": CLASSES[pred],
+                "confidence": conf
+            })
+            
             return response
         except Exception as e: 
             print("Prediction: ", prediction)

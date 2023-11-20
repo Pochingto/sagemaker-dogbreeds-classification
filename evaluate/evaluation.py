@@ -88,7 +88,7 @@ def get_dataset(data_dir, model_dir, debug=False):
         
     return test_dataset
 
-def write_evaluation_baseline_csv(output_dir, all_preds, all_labels, all_confs):
+def write_evaluation_baseline_csv(baseline_dir, all_preds, all_labels, all_confs):
     print("Writing baseline csv...")
     df = pd.DataFrame({
         'Predicted': all_preds,
@@ -96,12 +96,12 @@ def write_evaluation_baseline_csv(output_dir, all_preds, all_labels, all_confs):
         'Confidence': all_confs
     })
 
-    output_file_path = os.path.join(output_dir, 'evaluation_baseline.csv')
+    output_file_path = os.path.join(baseline_dir, 'evaluation_baseline.csv')
     df.to_csv(output_file_path, index=False)
     print(f"Wrote {output_file_path}")
     return output_file_path
 
-def evaluate(model, test_loader, output_dir):
+def evaluate(model, test_loader, output_dir, baseline_dir):
     model.eval()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     correct = 0
@@ -159,11 +159,11 @@ def evaluate(model, test_loader, output_dir):
         f.write(json.dumps(evaluation_report))
     print("Written evaluation.json .")
           
-    write_evaluation_baseline_csv(output_dir, all_preds, all_labels, all_confs)
+    write_evaluation_baseline_csv(baseline_dir, all_preds, all_labels, all_confs)
     
     return accuracy
 
-def main(model_dir, data_dir, output_dir, debug=False):
+def main(model_dir, data_dir, output_dir, baseline_dir, debug=False):
     # move non image folders out
     move_non_image_folders(data_dir)
     extract_model_dir(model_dir)
@@ -172,14 +172,15 @@ def main(model_dir, data_dir, output_dir, debug=False):
     test_dataset = get_dataset(data_dir, model_dir, debug)
     
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-    accuracy = evaluate(model, test_loader, output_dir)
+    accuracy = evaluate(model, test_loader, output_dir, baseline_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model-dir', type=str, default='/opt/ml/processing/model')
     parser.add_argument('--data-dir', type=str, default='/opt/ml/processing/test')
     parser.add_argument('--output-dir', type=str, default='/opt/ml/processing/evaluation')
+    parser.add_argument('--baseline-dir', type=str, default='/opt/ml/processing/baseline')
     parser.add_argument('--debug', type=bool, default=False)
     args = parser.parse_args()
 
-    main(args.model_dir, args.data_dir, args.output_dir, debug=args.debug)
+    main(args.model_dir, args.data_dir, args.output_dir, args.baseline_dir, debug=args.debug)

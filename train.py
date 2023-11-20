@@ -3,6 +3,7 @@ import os
 import argparse
 import io
 import time
+import shutil
 
 import torch
 import torch.nn as nn
@@ -20,7 +21,37 @@ import boto3
 from sagemaker.session import Session
 from sagemaker.experiments.run import load_run
 
+def move_non_image_folders(data_dir):
+    """
+    Move non-image folders from data_dir to a separate directory.
+
+    :param data_dir: Path to the directory containing image folders.
+    """
+    # Define the directory to move non-image folders to
+    parent_dir = Path(data_dir).parent
+    non_image_dir = os.path.join(parent_dir, 'non_image_folders')
+
+    # Create the directory if it doesn't exist
+    if not os.path.exists(non_image_dir):
+        os.makedirs(non_image_dir)
+
+    # Iterate through each item in data_dir
+    for item in os.listdir(data_dir):
+        item_path = os.path.join(data_dir, item)
+
+        if os.path.isdir(item_path):
+            contains_images = any(file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tiff')) for file in os.listdir(item_path))
+            if not contains_images:
+                destination = os.path.join(non_image_dir, item)
+                shutil.move(item_path, destination)
+                print(f"Moved non-image folder: {item} to {non_image_dir}")
+
 def get_dataset(data_dir):
+    print(f"Data dir: {data_dir}")
+    print(f"Listing folders in data_dir {sorted(os.listdir(data_dir))}")
+    print(f"Moving non image folder under data_dir {data_dir}")
+    move_non_image_folders(data_dir)
+    
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
