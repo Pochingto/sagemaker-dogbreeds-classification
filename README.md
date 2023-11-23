@@ -4,9 +4,9 @@ This project implements the following in AWS Sagemaker:
 - a deployment pipeline
 - a data monitoring and a model monitoring schedule
 
-![training and deployment pipelines](deployment.png)
+![training and deployment pipelines](images/deployment.png)
 
-![data and model monitoring](monitoring.png)
+![data and model monitoring](images/monitoring.png)
 
 Main code in `experiment.ipynb`. Other scripts are used in various Sagemaker services, e.g. training jobs, endpoints, monitoring. 
 
